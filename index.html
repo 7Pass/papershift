@@ -8,6 +8,12 @@
         table th:not(:first-child) {
             text-align: center;
         }
+
+        @media print {
+            @page {
+                size: landscape;
+            }
+        }
     </style>
 </head>
 <body>
