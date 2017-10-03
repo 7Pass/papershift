@@ -242,35 +242,36 @@ function group(assignments) {
 }
 
 function display(dates, areas) {
-    const table = $(".table");
-    table.css("display", "");
+    
+
+    const table = $("<table>")
+        .addClass("table table-bordered");
 
     // Headers
-    const rowDate = table.find("thead > tr:first-child");
-    const rowWeekday = table.find("thead > tr:nth-child(2)");
-
-    rowDate.empty();
-    rowWeekday.empty();
-
+    const rowDate = $("<tr>");
+    const rowWeekday = $("<tr>");
     rowDate.append($("<th>"));
     rowWeekday.append($("<th>"));
-
+    
     for (const date of dates) {
         rowDate.append($("<th>").text(toDisplayDate(date.date)));
         rowWeekday.append($("<th>").text(toDayOfWeek(date.date)));
     }
+    
+    table.append(rowDate);
+    table.append(rowWeekday);
 
     // Body
-    const tbody = table.find("tbody");
-    tbody.empty();
     const colspan = dates.length + 1;
-
     for (const area of areas) {
+        const tbody = $("<tbody>");
+
         // Area header
         tbody.append($("<tr>")
             .append($("<th>")
                 .text(area.area)
-                .attr("scope", "row")
+                .attr("scope", "row"))
+            .append($("<th>")
                 .attr("colspan", colspan)));
         
         for (const time of area.times) {
@@ -284,7 +285,14 @@ function display(dates, areas) {
 
             tbody.append(row);
         }
+
+        table.append(tbody);
     }
+
+    const container = $("#table");
+    container.css("display", "");
+    container.empty();
+    container.append(table);
 }
 
 async function retrieveAndDisplay(start, weeks) {
@@ -309,7 +317,7 @@ async function retrieveAndDisplay(start, weeks) {
         $("form, .progress").css("display", "none");
     } catch (error) {
         $(".alert").css("display", "");
-        $("form, table, .progress").css("display", "none");
+        $("form, #table, .progress").css("display", "none");
     }
 }
 
@@ -354,6 +362,6 @@ $(document).ready(() => {
     $("#refresh").click(event => {
         event.preventDefault();
         $("form").css("display", "");
-        $("table, .progress, .alert").css("display", "none");
+        $("#table, .progress, .alert").css("display", "none");
     });
 });
