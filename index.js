@@ -241,9 +241,7 @@ function group(assignments) {
     return {dates, areas: allAreas};
 }
 
-function display(dates, areas) {
-    
-
+function displayHorizontal(dates, areas) {
     const table = $("<table>")
         .addClass("table table-bordered");
 
@@ -258,8 +256,9 @@ function display(dates, areas) {
         rowWeekday.append($("<th>").text(toDayOfWeek(date.date)));
     }
     
-    table.append(rowDate);
-    table.append(rowWeekday);
+    table.append($("<thead>")
+        .append(rowDate)
+        .append(rowWeekday));
 
     // Body
     const colspan = dates.length + 1;
@@ -312,7 +311,7 @@ async function retrieveAndDisplay(start, weeks) {
         const assignments = await getAssignments(shifts, users);
         const {dates, areas: assignedAreas} = group(assignments);
         
-        display(dates, assignedAreas);
+        displayHorizontal(dates, assignedAreas);
 
         $("form, .progress").css("display", "none");
     } catch (error) {
