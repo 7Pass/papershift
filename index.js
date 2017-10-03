@@ -43,7 +43,7 @@ function toDayOfWeek(date) {
 }
 
 function addDays(date, days) {
-    var result = new Date(date.valueOf());
+    const result = new Date(date.valueOf());
     result.setDate(date.getDate() + days);
 
     return result;
@@ -61,7 +61,7 @@ async function get(resource, args) {
         api_token: token,
     }, args));
 
-    var url = "https://app.papershift.com/public_api/v1/" + resource + "?" + query;
+    const url = "https://app.papershift.com/public_api/v1/" + resource + "?" + query;
     return new Promise((resolve, reject) => {
         $.ajax({
             url: url,
@@ -247,8 +247,8 @@ function displayHorizontal(dates, areas) {
 
     // Headers
     const rowDate = $("<tr>");
-    const rowWeekday = $("<tr>");
     rowDate.append($("<th>"));
+    const rowWeekday = $("<tr>");
     rowWeekday.append($("<th>"));
     
     for (const date of dates) {
@@ -294,12 +294,65 @@ function displayHorizontal(dates, areas) {
     container.append(table);
 }
 
-async function retrieveAndDisplay(start, weeks) {
+function displayVertical(dates, areas) {
+    const table = $("<table>")
+        .addClass("table table-bordered");
+
+    // Headers
+    const rowArea = $("<tr>");
+    rowArea.append($("<th>")
+        .attr("colspan", 2)
+        .attr("rowspan", 2));
+    const rowTime = $("<tr>");
+
+    for (const area of areas) {
+        rowArea.append($("<th>")
+            .text(area.area)
+            .attr("colspan", area.times.length));
+        
+        for (const time of area.times) {
+            rowTime.append($("<th>").html(time.time.replace("-", "<br />")));
+        }
+    }
+
+    table.append($("<thead>")
+        .append(rowArea)
+        .append(rowTime));
+    
+    // Rows
+    const tbody = $("<tbody>");
+    for (const date of dates) {
+        const row = $("<tr>");
+
+        row
+            .append($("<th>")
+                .text(toDisplayDate(date.date)))
+            .append($("<th>")
+                .text(toDayOfWeek(date.date)));
+
+        for (const area of areas) {
+            for (const time of area.times) {
+                const users = date.times[time.key] || [];
+                row.append($("<td>").text(users.join(", ")));
+            }
+        }
+        
+        tbody.append(row);
+    }
+
+    table.append(tbody);
+
+    const container = $("#table");
+    container.css("display", "");
+    container.empty();
+    container.append(table);
+}
+
+async function retrieveAndDisplay(start, weeks, display) {
     try {
-        $("form input").each((i, x) => {
-            x.readOnly = true;
-        });
         $(".progress").css("display", "");
+        $("form input").attr("readonly", true);
+        $("form select").attr("disabled", true);
 
         const users = await getUsers();
         const {areas, locations} = await getWorkingAreas();
@@ -311,7 +364,7 @@ async function retrieveAndDisplay(start, weeks) {
         const assignments = await getAssignments(shifts, users);
         const {dates, areas: assignedAreas} = group(assignments);
         
-        displayHorizontal(dates, assignedAreas);
+        display(dates, assignedAreas);
 
         $("form, .progress").css("display", "none");
     } catch (error) {
@@ -323,9 +376,17 @@ async function retrieveAndDisplay(start, weeks) {
 $(document).ready(() => {
     const startInput = $("#start");
     const tokenInput = $("#token");
+    const orientation = $("select");
 
     startInput.val(toIsoDate(new Date()));
-    tokenInput.val(localStorage && localStorage.getItem("token"));
+
+    if (localStorage) {
+        tokenInput.val(localStorage.getItem("token"));
+        orientation.val(localStorage.getItem("orientation"));
+    }
+
+    if (!orientation.val())
+        orientation.val("horizontal");
 
     $("#retrieve").click(event => {
         event.preventDefault();
@@ -333,33 +394,40 @@ $(document).ready(() => {
         // Reset error state
         startInput.removeClass("is-invalid");
         tokenInput.removeClass("is-invalid");
-
+    
         // Ensure value is valid    
-        var start = startInput.val();
+        const start = startInput.val();
         if (!start || !start.length) {
             startInput.focus();
             startInput.addClass("is-invalid");
-
+    
             return;
         }
-
+    
         // Ensure token is valid
         token = tokenInput.val();
         if (!token || !token.length) {
             tokenInput.focus();
             tokenInput.addClass("is-invalid");
-
+    
             return;
         }
 
-        var weeks = parseInt($("#weeks").val());
-        localStorage && localStorage.setItem("token", token);
+        const weeks = parseInt($("#weeks").val());
+        const display = orientation.val() === "horizontal"
+            ? displayHorizontal : displayVertical;
 
-        retrieveAndDisplay(new Date(start), weeks);
+        if (localStorage) {
+            localStorage.setItem("token", token);
+            localStorage.setItem("orientation", orientation.val());
+        }
+
+        retrieveAndDisplay(new Date(start), weeks, display);
     });
 
     $("#refresh").click(event => {
         event.preventDefault();
+
         $("form").css("display", "");
         $("#table, .progress, .alert").css("display", "none");
     });
