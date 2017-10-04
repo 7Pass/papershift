@@ -57,22 +57,34 @@ function startOfDay(date) {
 }
 
 async function get(resource, args) {
-    const query = $.param(Object.assign({
+    const query = Object.assign({
         api_token: token,
-    }, args));
-
-    const url = "https://app.papershift.com/public_api/v1/" + resource + "?" + query;
+    }, args);
+    
+    const q = Object.keys(query)
+        .map(x => encodeURIComponent(x) + "=" + encodeURIComponent(query[x]))
+        .join("&");
+    
+    const url = "https://app.papershift.com/public_api/v1/" + resource + "?" + q;
     return new Promise((resolve, reject) => {
-        $.ajax({
-            url: url,
-            type: "GET",
-            headers: {
-                "Accept": "application/json",
-                "Content-Type": "application/json",
-            },
-            error: reject,
-            success: resolve,
-        });
+        const request = new XMLHttpRequest();
+        request.open("GET", url, true);
+        request.setRequestHeader("Accept", "application/json");
+        request.setRequestHeader("Content-Type", "application/json");
+        request.onerror = reject;
+        request.onload = function() {
+            const isSuccess = this.status >= 200 && this.status < 400;
+            if (isSuccess) {
+                const data = JSON.parse(this.response);
+                resolve(data);
+
+                return;
+            }
+
+            reject(this);
+        };
+        
+        request.send();
     });
 }
 
@@ -251,119 +263,130 @@ function group(assignments) {
 }
 
 function displayHorizontal(dates, areas) {
-    const table = $("<table>")
-        .addClass("table table-bordered");
+    const table = document.createElement("table");
+    table.classList.add("table", "table-bordered");
 
     // Headers
-    const rowDate = $("<tr>");
-    rowDate.append($("<th>"));
-    const rowWeekday = $("<tr>");
-    rowWeekday.append($("<th>"));
+    const thead = table.appendChild(document.createElement("thead"));
+    const rowDate = thead.appendChild(document.createElement("tr"));
+    const rowWeekday = thead.appendChild(document.createElement("tr"));
+
+    rowDate
+        .appendChild(document.createElement("th"))
+        .setAttribute("rowspan", "2");
     
     for (const date of dates) {
-        rowDate.append($("<th>").text(toDisplayDate(date.date)));
-        rowWeekday.append($("<th>").text(toDayOfWeek(date.date)));
+        rowDate
+            .appendChild(document.createElement("th"))
+            .innerText = toDisplayDate(date.date);
+
+        rowWeekday
+            .appendChild(document.createElement("th"))
+            .innerText = toDayOfWeek(date.date);
     }
-    
-    table.append($("<thead>")
-        .append(rowDate)
-        .append(rowWeekday));
 
     // Body
-    const colspan = dates.length + 1;
+    const colspan = (dates.length + 1) + "";
     for (const area of areas) {
-        const tbody = $("<tbody>");
+        const tbody = table.appendChild(
+            document.createElement("tbody"));
 
         // Area header
-        tbody.append($("<tr>")
-            .append($("<th>")
-                .text(area.area)
-                .attr("scope", "row"))
-            .append($("<th>")
-                .attr("colspan", colspan)));
+        const areaRow = tbody.appendChild(document.createElement("tr"));
+        const areaName = areaRow.appendChild(document.createElement("th"));
+        areaName.innerText = area.area
+        areaName.setAttribute("scope", "row");
+
+        areaRow
+            .appendChild(document.createElement("td"))
+            .setAttribute("colspan", colspan);
         
         for (const time of area.times) {
-            const row = $("<tr>");
-            row.append($("<th>")
-                .attr("scope", "row")
-                .text(time.time));
+            const timeRow = tbody.appendChild(document.createElement("tr"));
+            const timeHours = timeRow.appendChild(document.createElement("th"));
+            timeHours.innerText = time.time;
+            timeHours.setAttribute("scope", "row");
 
             for (const date of dates) {
                 const users = date.times[time.key] || [];
-                row.append($("<td>").text(users.join(", ")));
+                timeRow
+                    .appendChild(document.createElement("td"))
+                    .innerText = users.join(", ");
             }
-
-            tbody.append(row);
         }
-
-        table.append(tbody);
     }
 
-    const container = $("#table");
-    container.css("display", "");
-    container.empty();
-    container.append(table);
+    const container = document.getElementById("table");
+    container.innerHTML = "";
+    container.style.display = "";
+    container.appendChild(table);
 }
 
 function displayVertical(dates, areas) {
-    const table = $("<table>")
-        .addClass("table table-bordered");
+    const table = document.createElement("table");
+    table.classList.add("table", "table-bordered");
 
     // Headers
-    const rowArea = $("<tr>");
-    rowArea.append($("<th>")
-        .attr("colspan", 2)
-        .attr("rowspan", 2));
-    const rowTime = $("<tr>");
+    const thead = table.appendChild(document.createElement("thead"));
+    const rowArea = thead.appendChild(document.createElement("tr"));
+    const rowTime = thead.appendChild(document.createElement("tr"));
+
+    const empty = rowArea.appendChild(document.createElement("th"));
+    empty.setAttribute("colspan", "2");
+    empty.setAttribute("rowspan", "2");
 
     for (const area of areas) {
-        rowArea.append($("<th>")
-            .text(area.area)
-            .attr("colspan", area.times.length));
+        const areaCell = rowArea.appendChild(
+            document.createElement("th"));
+        areaCell.innerText = area.area;
+        areaCell.setAttribute("colspan", area.times.length + "");
         
         for (const time of area.times) {
-            rowTime.append($("<th>").html(time.time.replace(" - ", "<br />")));
+            rowTime
+                .appendChild(document.createElement("th"))
+                .innerHTML = time.time.replace(" - ", "<br />");
         }
     }
-
-    table.append($("<thead>")
-        .append(rowArea)
-        .append(rowTime));
     
     // Rows
-    const tbody = $("<tbody>");
+    const tbody = table.appendChild(
+        document.createElement("tbody"));
     for (const date of dates) {
-        const row = $("<tr>");
+        const row = tbody.appendChild(
+            document.createElement("tr"));
 
-        row
-            .append($("<th>")
-                .text(toDisplayDate(date.date)))
-            .append($("<th>")
-                .text(toDayOfWeek(date.date)));
+        const dayOfMonth = row.appendChild(document.createElement("th"));
+        dayOfMonth.setAttribute("scope", "row");
+        dayOfMonth.innerText = toDisplayDate(date.date);
+
+        const dayOfWeek = row.appendChild(document.createElement("th"));
+        dayOfWeek.setAttribute("scope", "row");
+        dayOfWeek.innerText = toDayOfWeek(date.date);
 
         for (const area of areas) {
             for (const time of area.times) {
                 const users = date.times[time.key] || [];
-                row.append($("<td>").text(users.join(", ")));
+                row
+                    .appendChild(document.createElement("td"))
+                    .innerText = users.join(", ");
             }
         }
-        
-        tbody.append(row);
     }
 
-    table.append(tbody);
-
-    const container = $("#table");
-    container.css("display", "");
-    container.empty();
-    container.append(table);
+    const container = document.getElementById("table");
+    container.innerHTML = "";
+    container.style.display = "";
+    container.appendChild(table);
 }
 
 async function retrieveAndDisplay(start, weeks, display) {
     try {
-        $(".progress").css("display", "");
-        $("form input").attr("readonly", true);
-        $("form select").attr("disabled", true);
+        [...document.getElementsByClassName("progress")]
+            .forEach(x => x.style.display = "");
+        [...document.getElementsByTagName("input")]
+            .forEach(x => x.readOnly = true);
+        [...document.getElementsByTagName("select")]
+            .forEach(x => x.disabled = true);
 
         const users = await getUsers();
         const {areas, locations} = await getWorkingAreas();
@@ -377,69 +400,102 @@ async function retrieveAndDisplay(start, weeks, display) {
         
         display(dates, assignedAreas);
 
-        $("form, .progress").css("display", "none");
+        [...document.getElementsByTagName("form")]
+            .forEach(x => x.style.display = "none");
+        [...document.getElementsByClassName("progress")]
+            .forEach(x => x.style.display = "none");
     } catch (error) {
-        $(".alert").css("display", "");
-        $("form, #table, .progress").css("display", "none");
+        [...document.getElementsByTagName("form")]
+            .forEach(x => x.style.display = "none");
+        [...document.getElementsByClassName("progress")]
+            .forEach(x => x.style.display = "none");
+        document
+            .getElementById("table")
+            .style.display = "none";
+            
+        [...document.getElementsByClassName("alert")]
+            .forEach(x => x.style.display = "");
     }
 }
 
-$(document).ready(() => {
-    const startInput = $("#start");
-    const tokenInput = $("#token");
-    const orientation = $("select");
+function ready(fn) {
+    const isReady = document.attachEvent
+        ? document.readyState === "complete"
+        : document.readyState !== "loading";
 
-    startInput.val(toIsoDate(new Date()));
+    if (isReady){
+      fn();
+      return;
+    }
+    
+    document.addEventListener("DOMContentLoaded", fn);
+  }
+
+ready(() => {
+    const startInput = document.getElementById("start");
+    const tokenInput = document.getElementById("token");
+    const orientation = document.getElementById("orientation");
+
+    start.value = toIsoDate(new Date());
 
     if (localStorage) {
-        tokenInput.val(localStorage.getItem("token"));
-        orientation.val(localStorage.getItem("orientation"));
+        tokenInput.value = localStorage.getItem("token");
+        orientation.value = localStorage.getItem("orientation");
     }
 
-    if (!orientation.val())
-        orientation.val("horizontal");
+    if (!orientation.value)
+        orientation.value = "horizontal";
 
-    $("#retrieve").click(event => {
+    document.getElementById("retrieve").onclick = event => {
         event.preventDefault();
 
         // Reset error state
-        startInput.removeClass("is-invalid");
-        tokenInput.removeClass("is-invalid");
+        startInput.classList.remove("is-invalid");
+        tokenInput.classList.remove("is-invalid");
     
         // Ensure value is valid    
-        const start = startInput.val();
+        const start = startInput.value;
         if (!start || !start.length) {
             startInput.focus();
-            startInput.addClass("is-invalid");
+            startInput.classList.add("is-invalid");
     
             return;
         }
     
         // Ensure token is valid
-        token = tokenInput.val();
+        token = tokenInput.value;
         if (!token || !token.length) {
             tokenInput.focus();
-            tokenInput.addClass("is-invalid");
+            tokenInput.classList.add("is-invalid");
     
             return;
         }
 
-        const weeks = parseInt($("#weeks").val());
-        const display = orientation.val() === "horizontal"
+        const weeks = parseInt(document.getElementById("weeks").value);
+        const display = orientation.value === "horizontal"
             ? displayHorizontal : displayVertical;
 
         if (localStorage) {
             localStorage.setItem("token", token);
-            localStorage.setItem("orientation", orientation.val());
+            localStorage.setItem("orientation", orientation.value);
         }
 
         retrieveAndDisplay(new Date(start), weeks, display);
-    });
+    };
 
-    $("#refresh").click(event => {
+    document.getElementById("refresh").onclick = event => {
         event.preventDefault();
 
-        $("form").css("display", "");
-        $("#table, .progress, .alert").css("display", "none");
-    });
+        [...document.getElementsByTagName("form")]
+            .forEach(x => x.style.display = "");
+
+        [...document.getElementsByClassName("progress")]
+            .forEach(x => x.style.display = "none");
+        [...document.getElementsByClassName("alert")]
+            .forEach(x => x.style.display = "none");
+
+        document
+            .getElementById("table")
+            .style.display = "none";
+    };
 });
