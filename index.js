@@ -158,6 +158,7 @@ async function getShifts(range_start, range_end, areas) {
                     area,
                     time,
                     date: startOfDay(start),
+                    duration: end.valueOf() - start.valueOf(),
                 }
             }
     
@@ -223,6 +224,7 @@ function group(assignments) {
             gArea.times.push({
                 time,
                 key: timeKey,
+                duration: shift.duration,
             });
         }
 
@@ -235,8 +237,15 @@ function group(assignments) {
     const allAreas = Object.keys(areas).map(x => areas[x]);
     allAreas.sort((x, y) => x.area > y.area ? 1 : -1);
     dates.sort((x, y) => x.date.valueOf() - y.date.valueOf());
-    for (const area of allAreas)
-        area.times.sort((x, y) => x.time > y.time ? 1 : -1);
+    for (const area of allAreas) {
+        area.times.sort((x, y) => {
+            var duration = Math.sign(x.duration - y.duration);
+            if (duration !== 0)
+                return duration;
+
+            return x.time > y.time ? 1 : -1
+        });
+    }
     
     return {dates, areas: allAreas};
 }
@@ -275,7 +284,9 @@ function displayHorizontal(dates, areas) {
         
         for (const time of area.times) {
             const row = $("<tr>");
-            row.append($("<td>").text(time.time));
+            row.append($("<th>")
+                .attr("scope", "row")
+                .text(time.time));
 
             for (const date of dates) {
                 const users = date.times[time.key] || [];
@@ -311,7 +322,7 @@ function displayVertical(dates, areas) {
             .attr("colspan", area.times.length));
         
         for (const time of area.times) {
-            rowTime.append($("<th>").html(time.time.replace("-", "<br />")));
+            rowTime.append($("<th>").html(time.time.replace(" - ", "<br />")));
         }
     }
 
