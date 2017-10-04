@@ -379,20 +379,136 @@ function displayVertical(dates, areas) {
     container.appendChild(table);
 }
 
+function getPdfRows(dates, areas) {
+    const rows = [];
+    
+    // Dates
+    const dayOfMonth = [{
+        text: "",
+        rowSpan: 2,
+    }];
+    const dayOfWeek = [""];
+
+    for (const date of dates) {
+        dayOfMonth.push({
+            style: "dateHeader",
+            text: toDisplayDate(date.date),
+        });
+        dayOfWeek.push({
+            style: "dateHeader",
+            text: toDayOfWeek(date.date),
+        });
+    }
+
+    rows.push(dayOfMonth, dayOfWeek);
+
+    // Shifts
+    const colSpan = dates.length + 1;
+    for (const area of areas) {
+        rows.push([{
+            colSpan,
+            text: area.area,
+            style: "timeHeader",
+        }]);
+
+        for (const time of area.times) {
+            const row = [{
+                text: time.time,
+                style: "timeHeader",
+            }];
+            for (const date of dates) {
+                const users = date.times[time.key] || [];
+                row.push(users.join(", "));
+            }
+
+            rows.push(row);
+        }
+    }
+
+    return rows;
+}
+
+function createPdf(dates, areas) {
+    // Header
+    const content = [];
+    
+    // 2 weeks per table
+    dates = dates.slice();
+    while (dates.length) {
+        const range = dates.splice(0, 14);
+        content.push({
+            table: {
+                headerRows: 2,
+                style: "tableStyle",
+                dontBreakRows: true,
+                body: getPdfRows(range, areas),
+            },
+        });
+    }
+
+    pdfMake.createPdf({
+        content,
+        pageSize: "A4",
+        pageOrientation: "landscape",
+        styles: {
+            header: {
+                bold: true,
+                fontSize: 15,
+                margin: [0, 0, 0, 10]
+            },
+            tableStyle: {
+                margin: [0, 5, 0, 15]
+            },
+            dateHeader: {
+                bold: true,
+            },
+            timeHeader: {
+                bold: true,
+                alignment: "left",
+            },
+        },
+        defaultStyle: {
+            fontSize: 12,
+            alignment: "center",
+        },
+    }).download("shifts.pdf");
+}
+
+function setUiState(state) {
+    // Readonly
+    const readonly = state.readonly;
+    [...document.getElementsByTagName("input")]
+        .forEach(x => x.readOnly = readonly);
+    [...document.getElementsByTagName("select")]
+        .forEach(x => x.disabled = readonly);
+
+    [...document.getElementsByTagName("form")]
+        .forEach(x => x.style.display = state.form ? "" : "none");
+    [...document.getElementsByClassName("progress")]
+        .forEach(x => x.style.display = state.progress ? "" : "none");
+    document
+        .getElementById("table")
+        .style.display = state.table ? "" : "none";
+        
+    [...document.getElementsByClassName("alert")]
+        .forEach(x => x.style.display = state.alert ? "" : "none");
+}
+
 async function retrieveAndDisplay(start, weeks, display) {
     try {
-        [...document.getElementsByClassName("progress")]
-            .forEach(x => x.style.display = "");
-        [...document.getElementsByTagName("input")]
-            .forEach(x => x.readOnly = true);
-        [...document.getElementsByTagName("select")]
-            .forEach(x => x.disabled = true);
+        // Show progress
+        setUiState({
+            form: true,
+            readonly: true,
+            progress: true,
+        });
 
+        // Retrieve data
         const users = await getUsers();
         const {areas, locations} = await getWorkingAreas();
     
         const range_start = toIsoDate(start);
-        const range_end = toIsoDate(addDays(start, 7 * weeks));
+        const range_end = toIsoDate(addDays(start, 7 * weeks - 1));
     
         const shifts = await getShifts(range_start, range_end, areas);
         const assignments = await getAssignments(shifts, users);
@@ -400,21 +516,13 @@ async function retrieveAndDisplay(start, weeks, display) {
         
         display(dates, assignedAreas);
 
-        [...document.getElementsByTagName("form")]
-            .forEach(x => x.style.display = "none");
-        [...document.getElementsByClassName("progress")]
-            .forEach(x => x.style.display = "none");
+        // Update UI state
+        if (display !== createPdf)
+            setUiState({table: true});
+        else
+            setUiState({form: true});
     } catch (error) {
-        [...document.getElementsByTagName("form")]
-            .forEach(x => x.style.display = "none");
-        [...document.getElementsByClassName("progress")]
-            .forEach(x => x.style.display = "none");
-        document
-            .getElementById("table")
-            .style.display = "none";
-            
-        [...document.getElementsByClassName("alert")]
-            .forEach(x => x.style.display = "");
+        setUiState({alert: true});
     }
 }
 
@@ -433,6 +541,7 @@ function ready(fn) {
 
 ready(() => {
     const startInput = document.getElementById("start");
+    const weeksInput = document.getElementById("weeks");
     const tokenInput = document.getElementById("token");
     const orientation = document.getElementById("orientation");
 
@@ -440,6 +549,7 @@ ready(() => {
 
     if (localStorage) {
         tokenInput.value = localStorage.getItem("token");
+        weeksInput.value = localStorage.getItem("weeks") || "2";
         orientation.value = localStorage.getItem("orientation");
     }
 
@@ -471,13 +581,27 @@ ready(() => {
             return;
         }
 
-        const weeks = parseInt(document.getElementById("weeks").value);
-        const display = orientation.value === "horizontal"
-            ? displayHorizontal : displayVertical;
-
+        const weeks = parseInt(weeksInput.value);
         if (localStorage) {
             localStorage.setItem("token", token);
+            localStorage.setItem("weeks", weeks + "");
             localStorage.setItem("orientation", orientation.value);
+        }
+
+        let display;
+        switch (orientation.value) {
+            default:
+            case "horizontal":
+                display = displayHorizontal;
+                break;
+
+            case "vertical":
+                display = displayVertical;
+                break;
+
+            case "pdf":
+                display = createPdf;
+                break;
         }
 
         retrieveAndDisplay(new Date(start), weeks, display);
@@ -486,16 +610,6 @@ ready(() => {
     document.getElementById("refresh").onclick = event => {
         event.preventDefault();
 
-        [...document.getElementsByTagName("form")]
-            .forEach(x => x.style.display = "");
-
-        [...document.getElementsByClassName("progress")]
-            .forEach(x => x.style.display = "none");
-        [...document.getElementsByClassName("alert")]
-            .forEach(x => x.style.display = "none");
-
-        document
-            .getElementById("table")
-            .style.display = "none";
+        setUiState({form: true});
     };
 });

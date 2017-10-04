@@ -38,6 +38,7 @@
                 <div class="form-group col">
                     <label for="orientation">Orientation</label>
                     <select class="form-control" id="orientation" aria-describedby="orientationHelp">
+                        <option value="pdf">Export as PDF</option>
                         <option value="horizontal">Dates as columns</option>
                         <option value="vertical">Dates as rows</option>
                     </select>
@@ -66,6 +67,8 @@
         </div>
     </div>
     
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.33/pdfmake.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.33/vfs_fonts.js"></script>
     <script src="index.js"></script>
 </body>
 </html>
