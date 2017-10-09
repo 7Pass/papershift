@@ -42,6 +42,11 @@ function toDayOfWeek(date) {
     return ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"][day];
 }
 
+function isWeekend(date)  {
+    const day = date.getDay();
+    return day === 0 || day === 6;
+}
+
 function addDays(date, days) {
     const result = new Date(date.valueOf());
     result.setDate(date.getDate() + days);
@@ -293,6 +298,7 @@ function displayHorizontal(dates, areas) {
 
         // Area header
         const areaRow = tbody.appendChild(document.createElement("tr"));
+        areaRow.classList.add("table-dark")
         const areaName = areaRow.appendChild(document.createElement("th"));
         areaName.innerText = area.area
         areaName.setAttribute("scope", "row");
@@ -303,15 +309,18 @@ function displayHorizontal(dates, areas) {
         
         for (const time of area.times) {
             const timeRow = tbody.appendChild(document.createElement("tr"));
-            const timeHours = timeRow.appendChild(document.createElement("th"));
+            const timeHours = timeRow.appendChild(document.createElement("td"));
             timeHours.innerText = time.time;
             timeHours.setAttribute("scope", "row");
 
             for (const date of dates) {
                 const users = date.times[time.key] || [];
-                timeRow
-                    .appendChild(document.createElement("td"))
-                    .innerText = users.join(", ");
+                const cell = timeRow.appendChild(
+                    document.createElement("td"));
+                cell.innerText = users.join(", ");
+
+                if (isWeekend(date.date))
+                    cell.classList.add("table-dark");
             }
         }
     }
@@ -352,12 +361,15 @@ function displayVertical(dates, areas) {
     const tbody = table.appendChild(
         document.createElement("tbody"));
     for (const date of dates) {
+        const weekend = isWeekend(date.date);
         const row = tbody.appendChild(
             document.createElement("tr"));
 
         const dayOfMonth = row.appendChild(document.createElement("th"));
         dayOfMonth.setAttribute("scope", "row");
         dayOfMonth.innerText = toDisplayDate(date.date);
+        if (isWeekend(date.date))
+            dayOfMonth.classList.add("weekend");
 
         const dayOfWeek = row.appendChild(document.createElement("th"));
         dayOfWeek.setAttribute("scope", "row");
@@ -366,9 +378,12 @@ function displayVertical(dates, areas) {
         for (const area of areas) {
             for (const time of area.times) {
                 const users = date.times[time.key] || [];
-                row
-                    .appendChild(document.createElement("td"))
-                    .innerText = users.join(", ");
+                const cell = row.appendChild(
+                    document.createElement("td"));
+                cell.innerText = users.join(", ");
+
+                if (weekend)
+                    cell.classList.add("table-dark");
             }
         }
     }
@@ -414,11 +429,19 @@ function getPdfRows(dates, areas) {
         for (const time of area.times) {
             const row = [{
                 text: time.time,
-                style: "timeHeader",
             }];
+
             for (const date of dates) {
                 const users = date.times[time.key] || [];
-                row.push(users.join(", "));
+
+                if (!isWeekend(date.date))
+                    row.push(users.join(", "));
+                else {
+                    row.push({
+                        style: "weekend",
+                        text: users.join(", "),
+                    });
+                }
             }
 
             rows.push(row);
@@ -465,6 +488,10 @@ function createPdf(dates, areas) {
             timeHeader: {
                 bold: true,
                 alignment: "left",
+                fillColor: "#CCCCCC",
+            },
+            weekend: {
+                fillColor: "#CCCCCC",
             },
         },
         defaultStyle: {
@@ -531,7 +558,7 @@ function ready(fn) {
         ? document.readyState === "complete"
         : document.readyState !== "loading";
 
-    if (isReady){
+    if (isReady) {
       fn();
       return;
     }
