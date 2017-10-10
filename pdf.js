@@ -1,4 +1,4 @@
-function getPdfRows(dates, areas) {
+function getPdfRows(dates, areas, absences) {
     const rows = [];
     
     // Dates
@@ -31,25 +31,52 @@ function getPdfRows(dates, areas) {
         }]);
 
         for (const time of area.times) {
-            const row = [{
-                text: time.time.replace(" - ", "-"),
-            }];
+            const row = [time.time.replace(" - ", "-")];
 
             for (const date of dates) {
                 const users = date.times[time.key] || [];
+                const text = users.join(", ");
 
                 if (!isWeekend(date.date))
-                    row.push(users.join(", "));
+                    row.push(text);
                 else {
                     row.push({
+                        text,
                         style: "weekend",
-                        text: users.join(", "),
                     });
                 }
             }
 
             rows.push(row);
         }
+    }
+
+    // Absences
+    rows.push([{
+        colSpan,
+        text: "Urlaub",
+        style: "timeHeader",
+    }])
+
+    for (const item of absences) {
+        const row = [item.user.abbrev];
+
+        for (const date of dates) {
+            const value = date.date.valueOf();
+            const isOnLeave = item.dates.find(x => x.valueOf() === value);
+            const text = isOnLeave ? "X" : "";
+
+            if (!isWeekend(date.date))
+                row.push(text);
+            else {
+                row.push({
+                    text,
+                    style: "weekend",
+                });
+            }
+        }
+
+        rows.push(row);
     }
 
     return rows;
@@ -65,7 +92,7 @@ function isEmptyRow(row) {
     return true;
 }
 
-function createPdf(dates, areas) {
+function createPdf(dates, areas, absences) {
     // Header
     const content = [];
     
@@ -73,7 +100,7 @@ function createPdf(dates, areas) {
     dates = dates.slice();
     while (dates.length) {
         const range = dates.splice(0, 7*4);
-        const body = getPdfRows(range, areas)
+        const body = getPdfRows(range, areas, absences)
             .filter(row => !isEmptyRow(row));
         
         const widths = ["auto"];

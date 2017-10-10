@@ -143,3 +143,46 @@ async function getAssignments(token, shifts, users) {
     
     return await Promise.all(assignments);
 }
+
+async function getAbsences(token, users, range_start, range_end) {
+    const absences = {};
+
+    let page = 1;
+    while (true) {
+        const response = await get("absences", token, {
+            page, range_start, range_end,
+        });
+
+        for (const item of response.absences) {
+            const user_id = item.user_id;
+            
+            let user = absences[user_id];
+            if (!user) {
+                user = {
+                    dates: [],
+                    user: users[user_id],
+                };
+
+                absences[user_id] = user;
+            }
+
+            const start = startOfDay(new Date(item.starts_at));
+            const end = startOfDay(new Date(item.ends_at));
+
+            let date = start;
+            while (date <= end) {
+                user.dates.push(date);
+                date = addDays(date, 1);
+            }
+        }
+
+        if (!response.next_page)
+            break;
+
+        page++;
+    }
+
+    return Object.keys(absences)
+        .map(x => absences[x])
+        .sort((x, y) => x.user.abbrev > y.user.abbrev ? 1 : 0);
+}

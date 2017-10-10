@@ -58,7 +58,7 @@ function group(assignments) {
     return {dates, areas: allAreas};
 }
 
-function displayHorizontal(dates, areas) {
+function displayTable(dates, areas, absences) {
     const table = document.createElement("table");
     table.classList.add("table", "table-bordered");
 
@@ -81,15 +81,15 @@ function displayHorizontal(dates, areas) {
             .innerText = toDayOfWeek(date.date);
     }
 
-    // Body
+    const tbody = table.appendChild(
+        document.createElement("tbody"));
+    
+    // Areas
     const colspan = (dates.length + 1) + "";
     for (const area of areas) {
-        const tbody = table.appendChild(
-            document.createElement("tbody"));
-
         // Area header
         const areaRow = tbody.appendChild(document.createElement("tr"));
-        areaRow.classList.add("table-dark")
+        areaRow.classList.add("weekend")
         const areaName = areaRow.appendChild(document.createElement("th"));
         areaName.innerText = area.area
         areaName.setAttribute("scope", "row");
@@ -111,7 +111,37 @@ function displayHorizontal(dates, areas) {
                 cell.innerText = users.join(", ");
 
                 if (isWeekend(date.date))
-                    cell.classList.add("table-dark");
+                    cell.classList.add("weekend");
+            }
+        }
+    }
+
+    // Absences
+    if (absences.length > 0) {
+        const headerRow = tbody.appendChild(document.createElement("tr"));
+        headerRow.classList.add("weekend");
+        const headerCell = headerRow.appendChild(document.createElement("th"));
+        headerCell.innerText = "Urlaub"
+        headerCell.setAttribute("scope", "row");
+
+        headerRow
+            .appendChild(document.createElement("td"))
+            .setAttribute("colspan", colspan);
+        
+        for (const item of absences) {
+            const row = tbody.appendChild(document.createElement("tr"));
+            const userCell = row.appendChild(document.createElement("td"));
+            userCell.innerText = item.user.abbrev;
+
+            for (const date of dates) {
+                const value = date.date.valueOf();
+
+                const cell = row.appendChild(document.createElement("td"));
+                const isOnLeave = item.dates.find(x => x.valueOf() === value);
+                cell.innerText = isOnLeave ? "X" : "";
+
+                if (isWeekend(date.date))
+                    cell.classList.add("weekend");
             }
         }
     }
@@ -160,9 +190,10 @@ async function retrieveAndDisplay(token, start, weeks, display) {
     
         const shifts = await getShifts(token, range_start, range_end, areas);
         const assignments = await getAssignments(token, shifts, users);
+        const absences = await getAbsences(token, users, range_start, range_end);
         const {dates, areas: assignedAreas} = group(assignments);
         
-        display(dates, assignedAreas);
+        display(dates, assignedAreas, absences);
 
         // Update UI state
         if (display !== createPdf)
@@ -240,7 +271,7 @@ ready(() => {
         switch (orientation.value) {
             default:
             case "table":
-                display = displayHorizontal;
+                display = displayTable;
                 break;
 
             case "pdf":
