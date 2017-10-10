@@ -138,10 +138,11 @@ function displayTable(dates, areas, absences) {
 
                 const cell = row.appendChild(document.createElement("td"));
                 const isOnLeave = item.dates.find(x => x.valueOf() === value);
-                cell.innerText = isOnLeave ? "X" : "";
 
-                if (isWeekend(date.date))
-                    cell.classList.add("weekend");
+                if (isOnLeave) {
+                    cell.innerText = "X";
+                    cell.classList.add("holiday");
+                }
             }
         }
     }
