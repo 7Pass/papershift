@@ -1,212 +1,3 @@
-var token;
-
-function toIsoDate(date) {
-    let day = date.getDate();
-    if (day < 10)
-        day = "0" + day;
-
-    let month = date.getMonth() + 1;
-    if (month < 10)
-        month = "0" + month;
-
-    let year = date.getFullYear();
-    return year + "-" + month + "-" + day;
-}
-
-function toDisplayTime(date) {
-    let hours = date.getHours();
-    if (hours < 10)
-        hours = "0" + hours;
-
-        let minutes = date.getMinutes();
-    if (minutes < 10)
-        minutes = "0" + minutes;
-
-    return hours + ":" + minutes;
-}
-
-function toDisplayDate(date) {
-    let day = date.getDate();
-    if (day < 10)
-        day = "0" + day;
-
-    let month = date.getMonth() + 1;
-    if (month < 10)
-        month = "0" + month;
-
-    return day + "." + month;
-}
-
-function toDayOfWeek(date) {
-    const day = date.getDay();
-    return ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"][day];
-}
-
-function isWeekend(date)  {
-    const day = date.getDay();
-    return day === 0 || day === 6;
-}
-
-function addDays(date, days) {
-    const result = new Date(date.valueOf());
-    result.setDate(date.getDate() + days);
-
-    return result;
-}
-
-function startOfDay(date) {
-    const result = new Date(date.valueOf());
-    result.setHours(0, 0, 0, 0);
-
-    return result;
-}
-
-async function get(resource, args) {
-    const query = Object.assign({
-        api_token: token,
-    }, args);
-    
-    const q = Object.keys(query)
-        .map(x => encodeURIComponent(x) + "=" + encodeURIComponent(query[x]))
-        .join("&");
-    
-    const url = "https://app.papershift.com/public_api/v1/" + resource + "?" + q;
-    return new Promise((resolve, reject) => {
-        const request = new XMLHttpRequest();
-        request.open("GET", url, true);
-        request.setRequestHeader("Accept", "application/json");
-        request.setRequestHeader("Content-Type", "application/json");
-        request.onerror = reject;
-        request.onload = function() {
-            const isSuccess = this.status >= 200 && this.status < 400;
-            if (isSuccess) {
-                const data = JSON.parse(this.response);
-                resolve(data);
-
-                return;
-            }
-
-            reject(this);
-        };
-        
-        request.send();
-    });
-}
-
-async function getUsers() {
-    let page = 1;
-    const result = {};
-
-    while (true) {
-        const response = await get("users", {page});
-
-        for (const user of response.users) {
-            let abbrev = user.abbrev || "";
-            if (!abbrev.length && user.username) {
-                abbrev = user.username
-                    .split(" ")
-                    .map(x => x[0])
-                    .join("");
-            }
-
-            result[user.id] = {
-                abbrev,
-                id: user.id,
-                name: user.username,
-            };
-        }
-
-        if (!response.next_page)
-            break;
-        
-        page++;
-    }
-
-    return result;
-}
-
-async function getWorkingAreas() {
-    const areas = {};
-    const locations = {};
-    const response = await get("working_areas");
-
-    for (const area of response.working_areas) {
-        const location = locations[area.location_id] ||
-            (locations[area.location_id] = {
-                id: area.location_id,
-                name: area.location_name,
-            });
-
-        areas[area.id] = {
-            location,
-            id: area.id,
-            name: area.name,
-            active: area.status === "active",
-        };
-    }
-
-    return {areas, locations};
-}
-
-async function getShifts(range_start, range_end, areas) {
-    const shifts = {};
-
-    for (const working_area_id of Object.keys(areas)) {
-        let page = 1;
-        const area = areas[working_area_id];
-        const location_id = area.location.id;
-
-        while (true) {
-            const response = await get("shifts", {
-                page,
-                range_start,
-                range_end,
-                location_id,
-                working_area_id: area.id,
-            });
-
-            for (const shift of response.shifts) {
-                const end = new Date(shift.ends_at);
-                const start = new Date(shift.starts_at);
-                const time = toDisplayTime(start) + " - " + toDisplayTime(end);
-
-                shifts[shift.id] = {
-                    id: shift.id,
-                    area,
-                    time,
-                    date: startOfDay(start),
-                    duration: end.valueOf() - start.valueOf(),
-                }
-            }
-    
-            if (!response.next_page)
-                break;
-    
-            page++;
-        }
-    }
-
-    return shifts;
-}
-
-async function getAssignment(shift, users) {
-    const response = await get("assignments", {
-        shift_id: shift.id,
-    });
-    
-    return {
-        shift,
-        assigned: response.users.assigned.map(x => users[x.id]),
-    };
-}
-
-async function getAssignments(shifts, users) {
-    const assignments = Object.keys(shifts)
-        .map(x => getAssignment(shifts[x], users));
-    
-    return await Promise.all(assignments);
-}
-
 function group(assignments) {
     const dates = [];
     const areas = {};
@@ -394,135 +185,6 @@ function displayVertical(dates, areas) {
     container.appendChild(table);
 }
 
-function getPdfRows(dates, areas) {
-    const rows = [];
-    
-    // Dates
-    const dayOfMonth = [{
-        text: "",
-        rowSpan: 2,
-    }];
-    const dayOfWeek = [""];
-
-    for (const date of dates) {
-        dayOfMonth.push({
-            style: "dateHeader",
-            text: toDisplayDate(date.date).replace(".", "\n"),
-        });
-        dayOfWeek.push({
-            style: "dateHeader",
-            text: toDayOfWeek(date.date),
-        });
-    }
-
-    rows.push(dayOfMonth, dayOfWeek);
-
-    // Shifts
-    const colSpan = dates.length + 1;
-    for (const area of areas) {
-        rows.push([{
-            colSpan,
-            text: area.area,
-            style: "timeHeader",
-        }]);
-
-        for (const time of area.times) {
-            const row = [{
-                text: time.time.replace(" - ", "-"),
-            }];
-
-            for (const date of dates) {
-                const users = date.times[time.key] || [];
-
-                if (!isWeekend(date.date))
-                    row.push(users.join(", "));
-                else {
-                    row.push({
-                        style: "weekend",
-                        text: users.join(", "),
-                    });
-                }
-            }
-
-            rows.push(row);
-        }
-    }
-
-    return rows;
-}
-
-function isEmptyRow(row) {
-    for (const cell of row) {
-        const text = cell.text || cell;
-        if (text.length > 0)
-            return false;
-    }
-
-    return true;
-}
-
-function createPdf(dates, areas) {
-    // Header
-    const content = [];
-    
-    // 2 weeks per table
-    dates = dates.slice();
-    while (dates.length) {
-        const range = dates.splice(0, 7*4);
-        const body = getPdfRows(range, areas)
-            .filter(row => !isEmptyRow(row));
-        const widths = [];
-        for (const row of body) {
-            while (widths.length < row.length) {
-                widths.push("auto");
-            }
-        }
-
-        content.push({
-            table: {
-                body,
-                widths,
-                headerRows: 2,
-                pageBreak: "after",
-                style: "tableStyle",
-                dontBreakRows: true,
-            },
-        });
-    }
-
-    pdfMake.createPdf({
-        content,
-        pageSize: "A4",
-        pageOrientation: "landscape",
-        styles: {
-            header: {
-                bold: true,
-                fontSize: 10,
-                margin: [0, 0, 0, 10]
-            },
-            tableStyle: {
-                margin: [0, 5, 0, 15]
-            },
-            dateHeader: {
-                bold: true,
-            },
-            timeHeader: {
-                bold: true,
-                noWrap: true,
-                alignment: "left",
-                fillColor: "#CCCCCC",
-            },
-            weekend: {
-                fillColor: "#CCCCCC",
-            },
-        },
-        defaultStyle: {
-            fontSize: 8,
-            alignment: "center",
-        },
-    }).download("shifts.pdf");
-}
-
 function setUiState(state) {
     // Readonly
     const readonly = state.readonly;
@@ -543,7 +205,7 @@ function setUiState(state) {
         .forEach(x => x.style.display = state.alert ? "" : "none");
 }
 
-async function retrieveAndDisplay(start, weeks, display) {
+async function retrieveAndDisplay(token, start, weeks, display) {
     try {
         // Show progress
         setUiState({
@@ -553,14 +215,14 @@ async function retrieveAndDisplay(start, weeks, display) {
         });
 
         // Retrieve data
-        const users = await getUsers();
-        const {areas, locations} = await getWorkingAreas();
+        const users = await getUsers(token);
+        const {areas, locations} = await getWorkingAreas(token);
     
         const range_start = toIsoDate(start);
         const range_end = toIsoDate(addDays(start, 7 * weeks - 1));
     
-        const shifts = await getShifts(range_start, range_end, areas);
-        const assignments = await getAssignments(shifts, users);
+        const shifts = await getShifts(token, range_start, range_end, areas);
+        const assignments = await getAssignments(token, shifts, users);
         const {dates, areas: assignedAreas} = group(assignments);
         
         display(dates, assignedAreas);
@@ -622,7 +284,7 @@ ready(() => {
         }
     
         // Ensure token is valid
-        token = tokenInput.value;
+        const token = tokenInput.value;
         if (!token || !token.length) {
             tokenInput.focus();
             tokenInput.classList.add("is-invalid");
@@ -653,7 +315,7 @@ ready(() => {
                 break;
         }
 
-        retrieveAndDisplay(new Date(start), weeks, display);
+        retrieveAndDisplay(token, new Date(start), weeks, display);
     };
 
     document.getElementById("refresh").onclick = event => {
