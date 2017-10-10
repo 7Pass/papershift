@@ -407,7 +407,7 @@ function getPdfRows(dates, areas) {
     for (const date of dates) {
         dayOfMonth.push({
             style: "dateHeader",
-            text: toDisplayDate(date.date),
+            text: toDisplayDate(date.date).replace(".", "\n"),
         });
         dayOfWeek.push({
             style: "dateHeader",
@@ -428,7 +428,7 @@ function getPdfRows(dates, areas) {
 
         for (const time of area.times) {
             const row = [{
-                text: time.time,
+                text: time.time.replace(" - ", "-"),
             }];
 
             for (const date of dates) {
@@ -451,6 +451,16 @@ function getPdfRows(dates, areas) {
     return rows;
 }
 
+function isEmptyRow(row) {
+    for (const cell of row) {
+        const text = cell.text || cell;
+        if (text.length > 0)
+            return false;
+    }
+
+    return true;
+}
+
 function createPdf(dates, areas) {
     // Header
     const content = [];
@@ -458,13 +468,24 @@ function createPdf(dates, areas) {
     // 2 weeks per table
     dates = dates.slice();
     while (dates.length) {
-        const range = dates.splice(0, 14);
+        const range = dates.splice(0, 7*4);
+        const body = getPdfRows(range, areas)
+            .filter(row => !isEmptyRow(row));
+        const widths = [];
+        for (const row of body) {
+            while (widths.length < row.length) {
+                widths.push("auto");
+            }
+        }
+
         content.push({
             table: {
+                body,
+                widths,
                 headerRows: 2,
+                pageBreak: "after",
                 style: "tableStyle",
                 dontBreakRows: true,
-                body: getPdfRows(range, areas),
             },
         });
     }
@@ -476,7 +497,7 @@ function createPdf(dates, areas) {
         styles: {
             header: {
                 bold: true,
-                fontSize: 15,
+                fontSize: 10,
                 margin: [0, 0, 0, 10]
             },
             tableStyle: {
@@ -487,6 +508,7 @@ function createPdf(dates, areas) {
             },
             timeHeader: {
                 bold: true,
+                noWrap: true,
                 alignment: "left",
                 fillColor: "#CCCCCC",
             },
@@ -495,7 +517,7 @@ function createPdf(dates, areas) {
             },
         },
         defaultStyle: {
-            fontSize: 12,
+            fontSize: 8,
             alignment: "center",
         },
     }).download("shifts.pdf");
