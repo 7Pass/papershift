@@ -122,69 +122,6 @@ function displayHorizontal(dates, areas) {
     container.appendChild(table);
 }
 
-function displayVertical(dates, areas) {
-    const table = document.createElement("table");
-    table.classList.add("table", "table-bordered");
-
-    // Headers
-    const thead = table.appendChild(document.createElement("thead"));
-    const rowArea = thead.appendChild(document.createElement("tr"));
-    const rowTime = thead.appendChild(document.createElement("tr"));
-
-    const empty = rowArea.appendChild(document.createElement("th"));
-    empty.setAttribute("colspan", "2");
-    empty.setAttribute("rowspan", "2");
-
-    for (const area of areas) {
-        const areaCell = rowArea.appendChild(
-            document.createElement("th"));
-        areaCell.innerText = area.area;
-        areaCell.setAttribute("colspan", area.times.length + "");
-        
-        for (const time of area.times) {
-            rowTime
-                .appendChild(document.createElement("th"))
-                .innerHTML = time.time.replace(" - ", "<br />");
-        }
-    }
-    
-    // Rows
-    const tbody = table.appendChild(
-        document.createElement("tbody"));
-    for (const date of dates) {
-        const weekend = isWeekend(date.date);
-        const row = tbody.appendChild(
-            document.createElement("tr"));
-
-        const dayOfMonth = row.appendChild(document.createElement("th"));
-        dayOfMonth.setAttribute("scope", "row");
-        dayOfMonth.innerText = toDisplayDate(date.date);
-        if (isWeekend(date.date))
-            dayOfMonth.classList.add("weekend");
-
-        const dayOfWeek = row.appendChild(document.createElement("th"));
-        dayOfWeek.setAttribute("scope", "row");
-        dayOfWeek.innerText = toDayOfWeek(date.date);
-
-        for (const area of areas) {
-            for (const time of area.times) {
-                const users = date.times[time.key] || [];
-                const cell = row.appendChild(
-                    document.createElement("td"));
-                cell.innerText = users.join(", ");
-
-                if (weekend)
-                    cell.classList.add("table-dark");
-            }
-        }
-    }
-
-    const container = document.getElementById("table");
-    container.innerHTML = "";
-    container.style.display = "";
-    container.appendChild(table);
-}
-
 function setUiState(state) {
     // Readonly
     const readonly = state.readonly;
@@ -302,12 +239,8 @@ ready(() => {
         let display;
         switch (orientation.value) {
             default:
-            case "horizontal":
+            case "table":
                 display = displayHorizontal;
-                break;
-
-            case "vertical":
-                display = displayVertical;
                 break;
 
             case "pdf":
