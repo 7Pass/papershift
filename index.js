@@ -58,7 +58,7 @@ function group(assignments) {
     return {dates, areas: allAreas};
 }
 
-function displayTable(dates, areas, absences) {
+function displayTable(dates, areas, absences, users) {
     const table = document.createElement("table");
     table.classList.add("table", "table-bordered");
 
@@ -84,19 +84,24 @@ function displayTable(dates, areas, absences) {
     const tbody = table.appendChild(
         document.createElement("tbody"));
     
+    function addHeading(text) {
+        const row = tbody.appendChild(document.createElement("tr"));
+        row.classList.add("weekend");
+
+        const cell = row.appendChild(document.createElement("th"));
+        cell.innerText = text;
+        cell.setAttribute("scope", "row");
+
+        row
+            .appendChild(document.createElement("td"))
+            .setAttribute("colspan", colspan);
+    }
+    
     // Areas
     const colspan = (dates.length + 1) + "";
     for (const area of areas) {
         // Area header
-        const areaRow = tbody.appendChild(document.createElement("tr"));
-        areaRow.classList.add("weekend")
-        const areaName = areaRow.appendChild(document.createElement("th"));
-        areaName.innerText = area.area
-        areaName.setAttribute("scope", "row");
-
-        areaRow
-            .appendChild(document.createElement("td"))
-            .setAttribute("colspan", colspan);
+        addHeading(area.area);
         
         for (const time of area.times) {
             const timeRow = tbody.appendChild(document.createElement("tr"));
@@ -118,15 +123,7 @@ function displayTable(dates, areas, absences) {
 
     // Absences
     if (absences.length > 0) {
-        const headerRow = tbody.appendChild(document.createElement("tr"));
-        headerRow.classList.add("weekend");
-        const headerCell = headerRow.appendChild(document.createElement("th"));
-        headerCell.innerText = "Urlaub"
-        headerCell.setAttribute("scope", "row");
-
-        headerRow
-            .appendChild(document.createElement("td"))
-            .setAttribute("colspan", colspan);
+        addHeading("Urlaub");
         
         for (const item of absences) {
             const row = tbody.appendChild(document.createElement("tr"));
@@ -146,6 +143,18 @@ function displayTable(dates, areas, absences) {
             }
         }
     }
+
+    // Users
+    addHeading("Mitarbeiter");
+    const row = tbody.appendChild(document.createElement("tr"));
+    
+    const cell = row.appendChild(document.createElement("td"));
+    cell.setAttribute("colspan", (dates.length + 2) + "");
+    cell.innerHTML = Object
+        .keys(users)
+        .map(x => users[x])
+        .map(x => "<strong>" + x.abbrev + "</strong>: " + x.name)
+        .join(", ");
 
     const container = document.getElementById("table");
     container.innerHTML = "";
@@ -194,10 +203,12 @@ async function retrieveAndDisplay(token, start, end) {
         const absences = await getAbsences(token, users, range_start, range_end);
         const {dates, areas: assignedAreas} = group(assignments);
         
-        displayTable(dates, assignedAreas, absences);
+        displayTable(dates, assignedAreas, absences, users);
 
-        document.getElementsByTagName("h1")[0].innerText = "Dienstplan " +
-            toDisplayDateWithYear(start) + " - " + toDisplayDateWithYear(end);
+        const title = "Dienstplan " + toDisplayDateWithYear(start) +
+            " - " + toDisplayDateWithYear(end);
+        document.title = title;
+        document.getElementsByTagName("h1")[0].innerText = title;
 
         // Update UI state
         setUiState({table: true});
