@@ -18,9 +18,15 @@
                     <small id="startHelp" class="form-text text-muted">First date of the calendar.</small>
                 </div>
                 <div class="form-group col">
-                    <label for="weeks">Number of weeks</label>
-                    <input type="number" min="1" max="10" value="2" class="form-control" id="weeks" aria-describedby="weeksHelp">
-                    <small id="weeksHelp" class="form-text text-muted">Number of weeks to retrieve.</small>
+                    <label for="weeks">Durations</label>
+                    <select class="form-control" id="weeks" aria-describedby="weeksHelp">
+                        <option value="month">Whole month</option>
+                        <option value="4">4 weeks</option>
+                        <option value="3">3 weeks</option>
+                        <option value="2" selected>2 weeks</option>
+                        <option value="1">1 weeks</option>
+                    </select>
+                    <small id="weeksHelp" class="form-text text-muted">Duration to retrieve.</small>
                 </div>
             </div>
             <div class="form-row">

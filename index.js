@@ -173,7 +173,7 @@ function setUiState(state) {
         .forEach(x => x.style.display = state.alert ? "" : "none");
 }
 
-async function retrieveAndDisplay(token, start, weeks, display) {
+async function retrieveAndDisplay(token, start, end, display) {
     try {
         // Show progress
         setUiState({
@@ -186,7 +186,6 @@ async function retrieveAndDisplay(token, start, weeks, display) {
         const users = await getUsers(token);
         const {areas, locations} = await getWorkingAreas(token);
     
-        const end = addDays(start, 7 * weeks - 1);
         const range_start = toIsoDate(start);
         const range_end = toIsoDate(end);
     
@@ -240,6 +239,26 @@ ready(() => {
     if (!orientation.value)
         orientation.value = "horizontal";
 
+    function checkWeeksValue() {
+        if (weeksInput.value !== "month")
+            return;
+        
+        const text = startInput.value;
+        if (!text || !text.length)
+            return;
+
+        const start = new Date(startInput.value);
+        if (start.getDate() === 1)
+            return;
+        
+        start.setDate(1);
+        startInput.value = toIsoDate(start);
+    }
+    
+    checkWeeksValue();
+    weeksInput.addEventListener("change", checkWeeksValue);
+    startInput.addEventListener("change", checkWeeksValue);
+
     document.getElementById("retrieve").onclick = event => {
         event.preventDefault();
 
@@ -248,13 +267,14 @@ ready(() => {
         tokenInput.classList.remove("is-invalid");
     
         // Ensure value is valid    
-        const start = startInput.value;
-        if (!start || !start.length) {
+        const startText = startInput.value;
+        if (!startText || !startText.length) {
             startInput.focus();
             startInput.classList.add("is-invalid");
     
             return;
         }
+        const start = new Date(startText);
     
         // Ensure token is valid
         const token = tokenInput.value;
@@ -265,10 +285,24 @@ ready(() => {
             return;
         }
 
+        let end;
         const weeks = parseInt(weeksInput.value);
+        if (isNaN(weeks)) {
+            start.setDate(1);
+
+            const nextMonth = new Date(start);
+            nextMonth.setMonth(start.getMonth() + 1);
+
+            end = addDays(nextMonth, -1);
+            
+        } else {
+            const weeks = parseInt(weeksInput.value);
+            end = addDays(start, weeks * 7);
+        }
+
         if (localStorage) {
             localStorage.setItem("token", token);
-            localStorage.setItem("weeks", weeks + "");
+            localStorage.setItem("weeks", weeksInput.value);
             localStorage.setItem("orientation", orientation.value);
         }
 
@@ -284,7 +318,7 @@ ready(() => {
                 break;
         }
 
-        retrieveAndDisplay(token, new Date(start), weeks, display);
+        retrieveAndDisplay(token, start, end, display);
     };
 
     document.getElementById("refresh").onclick = event => {
