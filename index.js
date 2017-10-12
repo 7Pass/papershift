@@ -173,7 +173,7 @@ function setUiState(state) {
         .forEach(x => x.style.display = state.alert ? "" : "none");
 }
 
-async function retrieveAndDisplay(token, start, end, display) {
+async function retrieveAndDisplay(token, start, end) {
     try {
         // Show progress
         setUiState({
@@ -194,16 +194,13 @@ async function retrieveAndDisplay(token, start, end, display) {
         const absences = await getAbsences(token, users, range_start, range_end);
         const {dates, areas: assignedAreas} = group(assignments);
         
-        display(dates, assignedAreas, absences);
+        displayTable(dates, assignedAreas, absences);
 
         document.getElementsByTagName("h1")[0].innerText = "Dienstplan " +
             toDisplayDateWithYear(start) + " - " + toDisplayDateWithYear(end);
 
         // Update UI state
-        if (display !== createPdf)
-            setUiState({table: true});
-        else
-            setUiState({form: true});
+        setUiState({table: true});
     } catch (error) {
         setUiState({alert: true});
     }
@@ -226,18 +223,13 @@ ready(() => {
     const startInput = document.getElementById("start");
     const weeksInput = document.getElementById("weeks");
     const tokenInput = document.getElementById("token");
-    const orientation = document.getElementById("orientation");
 
     start.value = toIsoDate(new Date());
 
     if (localStorage) {
         tokenInput.value = localStorage.getItem("token");
         weeksInput.value = localStorage.getItem("weeks") || "2";
-        orientation.value = localStorage.getItem("orientation");
     }
-
-    if (!orientation.value)
-        orientation.value = "horizontal";
 
     function checkWeeksValue() {
         if (weeksInput.value !== "month")
@@ -303,22 +295,9 @@ ready(() => {
         if (localStorage) {
             localStorage.setItem("token", token);
             localStorage.setItem("weeks", weeksInput.value);
-            localStorage.setItem("orientation", orientation.value);
         }
 
-        let display;
-        switch (orientation.value) {
-            default:
-            case "table":
-                display = displayTable;
-                break;
-
-            case "pdf":
-                display = createPdf;
-                break;
-        }
-
-        retrieveAndDisplay(token, start, end, display);
+        retrieveAndDisplay(token, start, end);
     };
 
     document.getElementById("refresh").onclick = event => {
