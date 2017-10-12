@@ -1,38 +1,36 @@
+function twoDigits(value) {
+    return value < 10
+        ? "0" + value
+        : value + "";
+}
+
 function toIsoDate(date) {
-    let day = date.getDate();
-    if (day < 10)
-        day = "0" + day;
+    const year = date.getFullYear();
+    const day = twoDigits(date.getDate());
+    const month = twoDigits(date.getMonth() + 1);
 
-    let month = date.getMonth() + 1;
-    if (month < 10)
-        month = "0" + month;
-
-    let year = date.getFullYear();
     return year + "-" + month + "-" + day;
 }
 
 function toDisplayTime(date) {
-    let hours = date.getHours();
-    if (hours < 10)
-        hours = "0" + hours;
-
-        let minutes = date.getMinutes();
-    if (minutes < 10)
-        minutes = "0" + minutes;
+    const hours = twoDigits(date.getHours());
+    const minutes = twoDigits(date.getMinutes());
 
     return hours + ":" + minutes;
 }
 
 function toDisplayDate(date) {
-    let day = date.getDate();
-    if (day < 10)
-        day = "0" + day;
-
-    let month = date.getMonth() + 1;
-    if (month < 10)
-        month = "0" + month;
+    const day = twoDigits(date.getDate());
+    const month = twoDigits(date.getMonth() + 1);
 
     return day + "." + month;
+}
+
+function toDisplayDateWithYear(date) {
+    const year = twoDigits(
+        date.getFullYear() % 100);
+    
+    return toDisplayDate(date) + "." + year;
 }
 
 function toDayOfWeek(date) {

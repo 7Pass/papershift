@@ -186,8 +186,9 @@ async function retrieveAndDisplay(token, start, weeks, display) {
         const users = await getUsers(token);
         const {areas, locations} = await getWorkingAreas(token);
     
+        const end = addDays(start, 7 * weeks - 1);
         const range_start = toIsoDate(start);
-        const range_end = toIsoDate(addDays(start, 7 * weeks - 1));
+        const range_end = toIsoDate(end);
     
         const shifts = await getShifts(token, range_start, range_end, areas);
         const assignments = await getAssignments(token, shifts, users);
@@ -195,6 +196,9 @@ async function retrieveAndDisplay(token, start, weeks, display) {
         const {dates, areas: assignedAreas} = group(assignments);
         
         display(dates, assignedAreas, absences);
+
+        document.getElementsByTagName("h1")[0].innerText = "Dienstplan " +
+            toDisplayDateWithYear(start) + " - " + toDisplayDateWithYear(end);
 
         // Update UI state
         if (display !== createPdf)
