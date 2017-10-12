@@ -1,0 +1,21 @@
+thead th,
+table td:not(:first-child) {
+    text-align: center;
+}
+
+td.weekend,
+.weekend td,
+.weekend th {
+    background-color: #c6c8ca !important;
+}
+
+.table td,
+.table th {
+    padding: 4px;
+}
+
+@media print {
+    @page {
+        size: landscape;
+    }
+}
