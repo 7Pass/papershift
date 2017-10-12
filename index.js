@@ -300,7 +300,7 @@ ready(() => {
             
         } else {
             const weeks = parseInt(weeksInput.value);
-            end = addDays(start, weeks * 7);
+            end = addDays(start, weeks * 7 - 1);
         }
 
         if (localStorage) {
