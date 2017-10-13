@@ -53,6 +53,7 @@ function group(assignments) {
     allAreas.sort((x, y) => x.area > y.area ? 1 : -1);
     dates.sort((x, y) => x.date.valueOf() - y.date.valueOf());
     for (const area of allAreas) {
+        // Short by duration first, then start time
         area.times.sort((x, y) => {
             var duration = Math.sign(x.duration - y.duration);
             if (duration !== 0)
@@ -60,6 +61,28 @@ function group(assignments) {
 
             return x.time > y.time ? 1 : -1
         });
+
+        // Special case: shift continuation
+        let changed;
+        do {
+            changed = false;
+            for (let i = 1; i < area.times.length; i++) {
+                const current = area.times[i];
+                const previous = area.times[i - 1];
+    
+                const end = previous.time.split(" - ")[0];
+                const start = current.time.split(" - ")[1];
+    
+                if (start !== end)
+                    continue;
+                
+                changed = true;
+                area.times[i] = previous;
+                area.times[i - 1] = current;
+
+                break;
+            }
+        } while (changed);
     }
     
     return {dates, areas: allAreas};
