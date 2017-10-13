@@ -147,7 +147,7 @@ function displayTable(dates, areas, absences, users) {
             .sort()
             .map(x => leaveAbbrevs[x] + ": " + x)
             .join(", ");
-        addHeading("Urlaub", subTitle);
+        addHeading("Abwesend", subTitle);
         
         for (const item of absences) {
             item.user.hasAssignment = true;
