@@ -91,7 +91,7 @@ function displayTable(dates, areas, absences, users) {
     const tbody = table.appendChild(
         document.createElement("tbody"));
     
-    function addHeading(text) {
+    function addHeading(text, subtitle) {
         const row = tbody.appendChild(document.createElement("tr"));
         row.classList.add("weekend");
 
@@ -99,9 +99,13 @@ function displayTable(dates, areas, absences, users) {
         cell.innerText = text;
         cell.setAttribute("scope", "row");
 
-        row
-            .appendChild(document.createElement("td"))
-            .setAttribute("colspan", colspan);
+        const subCell = row.appendChild(document.createElement("td"));
+        subCell.setAttribute("colspan", colspan);
+        
+        if (subtitle) {
+            subCell.innerHTML = subtitle;
+            subCell.style.textAlign = "left";
+        }
     }
     
     // Areas
@@ -130,7 +134,20 @@ function displayTable(dates, areas, absences, users) {
 
     // Absences
     if (absences.length > 0) {
-        addHeading("Urlaub");
+        
+        const leaveAbbrevs = {};
+        for (const item of absences) {
+            for (const date of item.dates) {
+                leaveAbbrevs[date.title] = date.title.substr(0, 2);
+            }
+        }
+
+        const subTitle = Object
+            .keys(leaveAbbrevs)
+            .sort()
+            .map(x => leaveAbbrevs[x] + ": " + x)
+            .join(", ");
+        addHeading("Urlaub", subTitle);
         
         for (const item of absences) {
             item.user.hasAssignment = true;
@@ -143,12 +160,13 @@ function displayTable(dates, areas, absences, users) {
                 const value = date.date.valueOf();
 
                 const cell = row.appendChild(document.createElement("td"));
-                const isOnLeave = item.dates.find(x => x.valueOf() === value);
+                const leave = item.dates.find(x => x.date.valueOf() === value);
 
-                if (isOnLeave) {
-                    cell.innerText = "X";
-                    cell.classList.add("holiday");
-                }
+                if (!leave)
+                    continue;
+
+                cell.classList.add("holiday");
+                cell.innerText = leaveAbbrevs[leave.title];
             }
         }
     }

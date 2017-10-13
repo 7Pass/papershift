@@ -171,7 +171,10 @@ async function getAbsences(token, users, range_start, range_end) {
 
             let date = start;
             while (date <= end) {
-                user.dates.push(date);
+                user.dates.push({
+                    date,
+                    title: item.title,
+                });
                 date = addDays(date, 1);
             }
         }
