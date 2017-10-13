@@ -74,7 +74,7 @@ function displayTable(dates, areas, absences, users) {
     for (const date of dates) {
         rowDate
             .appendChild(document.createElement("th"))
-            .innerText = toDisplayDate(date.date);
+            .innerHTML = toDisplayDate(date.date);
 
         rowWeekday
             .appendChild(document.createElement("th"))

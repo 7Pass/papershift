@@ -23,14 +23,15 @@ function toDisplayDate(date) {
     const day = twoDigits(date.getDate());
     const month = twoDigits(date.getMonth() + 1);
 
-    return day + "." + month;
+    return day + "<br/>" + month;
 }
 
 function toDisplayDateWithYear(date) {
-    const year = twoDigits(
-        date.getFullYear() % 100);
+    const day = twoDigits(date.getDate());
+    const month = twoDigits(date.getMonth() + 1);
+    const year = twoDigits(date.getFullYear() % 100);
     
-    return toDisplayDate(date) + "." + year;
+    return day + "." + month + "." + year;
 }
 
 function toDayOfWeek(date) {
