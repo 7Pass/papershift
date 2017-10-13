@@ -133,6 +133,8 @@ function displayTable(dates, areas, absences, users) {
         addHeading("Urlaub");
         
         for (const item of absences) {
+            item.user.hasAssignment = true;
+            
             const row = tbody.appendChild(document.createElement("tr"));
             const userCell = row.appendChild(document.createElement("td"));
             userCell.innerText = item.user.abbrev;
