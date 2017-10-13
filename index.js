@@ -38,7 +38,14 @@ function group(assignments) {
 
         const gTime = gDate.times[timeKey] ||
             (gDate.times[timeKey] = []);
-        gTime.push(...assignment.assigned.map(x => x.abbrev || x.name));
+        
+        const users = [];
+        for (const user of assignment.assigned) {
+            user.hasAssignment = true;
+            users.push(user.abbrev || user.name);
+        }
+
+        gTime.push(...users);
     }
 
     // Sort
@@ -153,6 +160,8 @@ function displayTable(dates, areas, absences, users) {
     cell.innerHTML = Object
         .keys(users)
         .map(x => users[x])
+        .filter(x => x.hasAssignment)
+        .sort((x, y) => x.abbrev > y.abbrev ? 1 : -1)
         .map(x => "<strong>" + x.abbrev + "</strong>: " + x.name)
         .join(", ");
 
