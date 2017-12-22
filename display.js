@@ -1,3 +1,22 @@
+function getSortedAreas(areas) {
+    const knowns = [
+        "90486", // Rezeption
+        "90489", // Housekeeping
+        "90491", // Reinigung
+        "90487", // Küche
+        "90488", // Service
+    ];
+    const unknowns = Object
+        .keys(areas)
+        .filter(x => knowns.indexOf(x) < 0)
+        .sort((x, y) => areas[x].area > areas[y].area ? 1 : -1);
+    
+    return knowns
+        .concat(unknowns)
+        .map(x => areas[x])
+        .filter(x => x);
+}
+
 function group(assignments) {
     const dates = [];
     const areas = {};
@@ -48,10 +67,10 @@ function group(assignments) {
         gTime.push(...users);
     }
 
-    // Sort
-    const allAreas = Object.keys(areas).map(x => areas[x]);
-    allAreas.sort((x, y) => x.area > y.area ? 1 : -1);
+    // Sort    
+    const allAreas = getSortedAreas(areas);
     dates.sort((x, y) => x.date.valueOf() - y.date.valueOf());
+
     for (const area of allAreas) {
         // Short by duration first, then start time
         area.times.sort((x, y) => {
