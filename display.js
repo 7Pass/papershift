@@ -248,12 +248,9 @@ async function retrieveAndDisplay(token, start, end) {
         const users = await getUsers(token);
         const {areas, locations} = await getWorkingAreas(token);
     
-        const range_start = toIsoDate(start);
-        const range_end = toIsoDate(end);
-    
-        const shifts = await getShifts(token, range_start, range_end, areas);
+        const shifts = await getShifts(token, start, end, areas);
         const assignments = await getAssignments(token, shifts, users);
-        const absences = await getAbsences(token, users, range_start, range_end);
+        const absences = await getAbsences(token, users, start, end);
         const {dates, areas: assignedAreas} = group(assignments);
         
         displayTable(dates, assignedAreas, absences, users);

@@ -85,7 +85,7 @@ async function getWorkingAreas(token) {
     return {areas, locations};
 }
 
-async function getShifts(token, range_start, range_end, areas) {
+async function getShifts(token, startDate, endDate, areas) {
     const shifts = {};
 
     for (const working_area_id of Object.keys(areas)) {
@@ -96,8 +96,8 @@ async function getShifts(token, range_start, range_end, areas) {
         while (true) {
             const response = await get("shifts", token, {
                 page,
-                range_start,
-                range_end,
+                range_start: toIsoDate(startDate),
+                range_end: toIsoDate(endDate),
                 location_id,
                 working_area_id: area.id,
             });
@@ -144,18 +144,28 @@ async function getAssignments(token, shifts, users) {
     return await Promise.all(assignments);
 }
 
-async function getAbsences(token, users, range_start, range_end) {
+async function getAbsences(token, users, startDate, endDate) {
     const absences = {};
 
     let page = 1;
     while (true) {
         const response = await get("absences", token, {
-            page, range_start, range_end,
+            page,
+            range_end: toIsoDate(endDate),
+            range_start: toIsoDate(startDate),
         });
 
         for (const item of response.absences) {
+            const start = startOfDay(new Date(item.starts_at));
+            if (start > endDate)
+                continue;
+                
+            const end = startOfDay(new Date(item.ends_at));
+            if (end < startDate) {
+                continue;
+            }
+
             const user_id = item.user_id;
-            
             let user = absences[user_id];
             if (!user) {
                 user = {
@@ -165,9 +175,6 @@ async function getAbsences(token, users, range_start, range_end) {
 
                 absences[user_id] = user;
             }
-
-            const start = startOfDay(new Date(item.starts_at));
-            const end = startOfDay(new Date(item.ends_at));
 
             let date = start;
             while (date <= end) {
