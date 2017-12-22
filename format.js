@@ -44,9 +44,23 @@ function isWeekend(date)  {
     return day === 0 || day === 6;
 }
 
+function addMinutes(date, minutes) {
+    const result = new Date(date.valueOf());
+    result.setMinutes(date.getMinutes() + minutes);
+
+    return result;
+}
+
 function addDays(date, days) {
     const result = new Date(date.valueOf());
     result.setDate(date.getDate() + days);
+
+    return result;
+}
+
+function addMonths(date, months) {
+    const result = new Date(date.valueOf());
+    result.setMonth(date.getMonth() + months);
 
     return result;
 }
@@ -56,4 +70,19 @@ function startOfDay(date) {
     result.setHours(0, 0, 0, 0);
 
     return result;
+}
+
+function startOfMonth(date) {
+    return new Date(
+        date.getFullYear(),
+        date.getMonth(),
+        1);
+}
+
+function startOfWeek(date) {
+    const diff = date.getDay() - 1;
+    if (diff >= 0)
+        return addDays(date, -diff);
+    
+    return addDays(date, -6);
 }
