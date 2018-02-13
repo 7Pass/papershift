@@ -81,6 +81,16 @@ function group(assignments) {
             return x.time > y.time ? 1 : -1
         });
     }
+
+    const service = allAreas.find(x => x.area == "Service");
+    if (service) {
+        service.times.sort((x, y) => {
+            if (x.time !== y.time)
+                return x.time > y.time ? 1 : -1;
+            
+            return Math.sign(x.duration - y.duration);
+        });
+    }
     
     return {dates, areas: allAreas};
 }
