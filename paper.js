@@ -30,6 +30,11 @@ async function get(resource, token, args) {
     });
 }
 
+async function getLocation(token) {
+    const response = await get("locations", token);
+    return response.locations[0];
+}
+
 async function getUsers(token) {
     let page = 1;
     const result = {};
@@ -63,9 +68,13 @@ async function getUsers(token) {
 }
 
 async function getWorkingAreas(token) {
+    const location = await getLocation(token);
+
     const areas = {};
     const locations = {};
-    const response = await get("working_areas", token);
+    const response = await get("working_areas", token, {
+        location_id: location.id,
+    });
 
     for (const area of response.working_areas) {
         const location = locations[area.location_id] ||
