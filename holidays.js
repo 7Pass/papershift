@@ -1,3 +1,5 @@
+// Retrieved from https://www.bayern.by/service/feiertage-brueckentage/
+
 const holidays = [
     "01.01.18", // "Neujahr"
     "06.01.18", // "Heilige Drei Könige"
