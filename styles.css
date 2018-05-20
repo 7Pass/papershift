@@ -4,8 +4,12 @@ table td:not(:first-child) {
 }
 
 td.weekend,
-.weekend td,
-.weekend th {
+td.public-holiday {
+    background-color: #c6c8ca !important;
+}
+
+.area-heading td,
+.area-heading th {
     background-color: #c6c8ca !important;
 }
 

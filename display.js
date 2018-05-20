@@ -10,7 +10,7 @@ function getSortedAreas(areas) {
         .keys(areas)
         .filter(x => knowns.indexOf(x) < 0)
         .sort((x, y) => areas[x].area > areas[y].area ? 1 : -1);
-    
+
     return knowns
         .concat(unknowns)
         .map(x => areas[x])
@@ -57,7 +57,7 @@ function group(assignments) {
 
         const gTime = gDate.times[timeKey] ||
             (gDate.times[timeKey] = []);
-        
+
         const users = [];
         for (const user of assignment.assigned) {
             user.hasAssignment = true;
@@ -67,7 +67,7 @@ function group(assignments) {
         gTime.push(...users);
     }
 
-    // Sort    
+    // Sort
     const allAreas = getSortedAreas(areas);
     dates.sort((x, y) => x.date.valueOf() - y.date.valueOf());
 
@@ -87,11 +87,11 @@ function group(assignments) {
         service.times.sort((x, y) => {
             if (x.time !== y.time)
                 return x.time > y.time ? 1 : -1;
-            
+
             return Math.sign(x.duration - y.duration);
         });
     }
-    
+
     return {dates, areas: allAreas};
 }
 
@@ -107,7 +107,7 @@ function displayTable(dates, areas, absences, users) {
     rowDate
         .appendChild(document.createElement("th"))
         .setAttribute("rowspan", "2");
-    
+
     for (const date of dates) {
         rowDate
             .appendChild(document.createElement("th"))
@@ -120,10 +120,10 @@ function displayTable(dates, areas, absences, users) {
 
     const tbody = table.appendChild(
         document.createElement("tbody"));
-    
+
     function addHeading(text, subtitle) {
         const row = tbody.appendChild(document.createElement("tr"));
-        row.classList.add("weekend");
+        row.classList.add("area-heading");
 
         const cell = row.appendChild(document.createElement("th"));
         cell.innerText = text;
@@ -131,19 +131,19 @@ function displayTable(dates, areas, absences, users) {
 
         const subCell = row.appendChild(document.createElement("td"));
         subCell.setAttribute("colspan", colspan);
-        
+
         if (subtitle) {
             subCell.innerHTML = subtitle;
             subCell.style.textAlign = "left";
         }
     }
-    
+
     // Areas
     const colspan = (dates.length + 1) + "";
     for (const area of areas) {
         // Area header
         addHeading(area.area);
-        
+
         for (const time of area.times) {
             const timeRow = tbody.appendChild(document.createElement("tr"));
             const timeHours = timeRow.appendChild(document.createElement("td"));
@@ -158,13 +158,16 @@ function displayTable(dates, areas, absences, users) {
 
                 if (isWeekend(date.date))
                     cell.classList.add("weekend");
+
+                if (isHoliday(date.date))
+                    cell.classList.add("public-holiday");
             }
         }
     }
 
     // Absences
     if (absences.length > 0) {
-        
+
         const leaveAbbrevs = {};
         for (const item of absences) {
             for (const date of item.dates) {
@@ -178,10 +181,10 @@ function displayTable(dates, areas, absences, users) {
             .map(x => leaveAbbrevs[x] + ": " + x)
             .join(", ");
         addHeading("Abwesend", subTitle);
-        
+
         for (const item of absences) {
             item.user.hasAssignment = true;
-            
+
             const row = tbody.appendChild(document.createElement("tr"));
             const userCell = row.appendChild(document.createElement("td"));
             userCell.innerText = item.user.abbrev;
@@ -204,7 +207,7 @@ function displayTable(dates, areas, absences, users) {
     // Users
     addHeading("Mitarbeiter");
     const row = tbody.appendChild(document.createElement("tr"));
-    
+
     const cell = row.appendChild(document.createElement("td"));
     cell.setAttribute("colspan", (dates.length + 2) + "");
     cell.innerHTML = Object
@@ -236,10 +239,10 @@ function setUiState(state) {
     document
         .getElementById("table")
         .style.display = state.table ? "" : "none";
-        
+
     [...document.getElementsByClassName("alert")]
         .forEach(x => x.style.display = state.alert ? "" : "none");
-    
+
     const showFooter = !state.form && !state.progress;
     const footer = document.getElementsByTagName("footer")[0];
     footer.style.display = showFooter ? "" : "none";
@@ -257,12 +260,12 @@ async function retrieveAndDisplay(token, start, end) {
         // Retrieve data
         const users = await getUsers(token);
         const {areas, locations} = await getWorkingAreas(token);
-    
+
         const shifts = await getShifts(token, start, end, areas);
         const assignments = await getAssignments(token, shifts, users);
         const absences = await getAbsences(token, users, start, end);
         const {dates, areas: assignedAreas} = group(assignments);
-        
+
         displayTable(dates, assignedAreas, absences, users);
 
         const title = "Dienstplan " + toDisplayDateWithYear(start) +
