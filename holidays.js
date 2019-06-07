@@ -16,20 +16,20 @@ const holidays = [
     "25.12.18", // "1. Weihnachtstag"
     "26.12.18", // "2. Weihnachtstag"
 
-    "26.12.2019", // 2. Weihnachtstag
-    "25.12.2019", // 1. Weihnachtstag
-    "01.11.2019", // Allerheiligen
-    "31.10.2019", // Reformationstag
-    "03.10.2019", // Tag der Deutschen Einheit
-    "15.08.2019", // Mariä Himmelfahrt
-    "20.06.2019", // Fronleichnam
-    "10.06.2019", // Pfingstmontag
-    "30.05.2019", // Christi Himmelfahrt
-    "01.05.2019", // Tag der Arbeit
-    "22.04.2019", // Ostermontag
-    "19.04.2019", // Karfreitag
-    "06.01.2019", // Heilige Drei Könige
-    "01.01.2019", // Neujahrstag
+    "26.12.19", // 2. Weihnachtstag
+    "25.12.19", // 1. Weihnachtstag
+    "01.11.19", // Allerheiligen
+    "31.10.19", // Reformationstag
+    "03.10.19", // Tag der Deutschen Einheit
+    "15.08.19", // Mariä Himmelfahrt
+    "20.06.19", // Fronleichnam
+    "10.06.19", // Pfingstmontag
+    "30.05.19", // Christi Himmelfahrt
+    "01.05.19", // Tag der Arbeit
+    "22.04.19", // Ostermontag
+    "19.04.19", // Karfreitag
+    "06.01.19", // Heilige Drei Könige
+    "01.01.19", // Neujahrstag
 ];
 
 function isHoliday(date) {
