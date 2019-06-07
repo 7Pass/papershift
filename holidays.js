@@ -15,6 +15,21 @@ const holidays = [
     "01.11.18", // "Allerheiligen"
     "25.12.18", // "1. Weihnachtstag"
     "26.12.18", // "2. Weihnachtstag"
+
+    "26.12.2019", // 2. Weihnachtstag
+    "25.12.2019", // 1. Weihnachtstag
+    "01.11.2019", // Allerheiligen
+    "31.10.2019", // Reformationstag
+    "03.10.2019", // Tag der Deutschen Einheit
+    "15.08.2019", // Mariä Himmelfahrt
+    "20.06.2019", // Fronleichnam
+    "10.06.2019", // Pfingstmontag
+    "30.05.2019", // Christi Himmelfahrt
+    "01.05.2019", // Tag der Arbeit
+    "22.04.2019", // Ostermontag
+    "19.04.2019", // Karfreitag
+    "06.01.2019", // Heilige Drei Könige
+    "01.01.2019", // Neujahrstag
 ];
 
 function isHoliday(date) {
