@@ -95,7 +95,7 @@ function group(assignments) {
     return {dates, areas: allAreas};
 }
 
-function displayTable(dates, areas, absences, users) {
+function displayTable(dates, areas, absences, users, holidays) {
     const table = document.createElement("table");
     table.classList.add("table", "table-bordered");
 
@@ -159,7 +159,7 @@ function displayTable(dates, areas, absences, users) {
                 if (isWeekend(date.date))
                     cell.classList.add("weekend");
 
-                if (isHoliday(date.date))
+                if (isHoliday(date.date, holidays))
                     cell.classList.add("public-holiday");
             }
         }
@@ -258,6 +258,7 @@ async function retrieveAndDisplay(token, start, end) {
         });
 
         // Retrieve data
+        const qHolidays = getHolidays(start, end);
         const users = await getUsers(token);
         const {areas, locations} = await getWorkingAreas(token);
 
@@ -266,7 +267,7 @@ async function retrieveAndDisplay(token, start, end) {
         const absences = await getAbsences(token, users, start, end);
         const {dates, areas: assignedAreas} = group(assignments);
 
-        displayTable(dates, assignedAreas, absences, users);
+        displayTable(dates, assignedAreas, absences, users, await qHolidays);
 
         const title = "Dienstplan " + toDisplayDateWithYear(start) +
             " - " + toDisplayDateWithYear(end);
