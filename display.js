@@ -60,8 +60,15 @@ function group(assignments) {
 
         const users = [];
         for (const user of assignment.assigned) {
-            user.hasAssignment = true;
-            users.push(user.abbrev || user.name);
+			if (user) {
+				user.hasAssignment = true;
+				users.push(user.abbrev || user.name);
+				
+				break;
+			}
+            
+			// User account has been removed
+			users.push("XX");
         }
 
         gTime.push(...users);
